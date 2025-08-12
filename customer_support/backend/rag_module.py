@@ -5,7 +5,9 @@ import pickle
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import together
-together.api_key = "tgp_v1_hcAYeb5IquESKVQOsx6_wbAn0jkRNJTWHnNipFUTIlI"
+from dotenv import load_dotenv
+load_dotenv()
+together.api_key = os.getenv("TOGETHER_API_KEY")
 DATA_DIR = "data"
 INDEX_PATH = os.path.join(DATA_DIR, "customer_support.index")
 PICKLE_PATH = os.path.join(DATA_DIR, "customer_support_df.pkl")
@@ -35,7 +37,7 @@ Here are several answers retrieved from the knowledge base:
 
 Please combine and reword these answers into a single, clear, and concise response suitable for a customer.
 
-If the topic requires instructions, provide step-by-step guidance in a simple and easy-to-follow manner.
+Provide step-by-step guidance in a simple and easy-to-follow manner.
 
 Do NOT include any internal reasoning, commentary, or repeated information.
 
@@ -53,7 +55,7 @@ Provide only the final customer-facing answer.
         model="mistralai/Mistral-7B-Instruct-v0.2",
         prompt=prompt,
         max_tokens=400,
-        temperature=0.3
+        temperature=0.5
     )
 
     return response["choices"][0]["text"].strip()
