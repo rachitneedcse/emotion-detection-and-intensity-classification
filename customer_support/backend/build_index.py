@@ -22,7 +22,7 @@ print(f"✅ Loaded cleaned dataset with {len(df)} rows")
 
 # Load embedding model
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("sentence-transformers/msmarco-distilbert-base-v4")
 print("✅ Model loaded")
 
 
