@@ -6,6 +6,9 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import together
 from dotenv import load_dotenv
+from transformers import BartForConditionalGeneration, BartTokenizer
+
+
 load_dotenv()
 together.api_key = os.getenv("TOGETHER_API_KEY")
 DATA_DIR = "data"
@@ -26,8 +29,28 @@ with open(PICKLE_PATH, "rb") as f:
 
 model = SentenceTransformer("sentence-transformers/msmarco-distilbert-base-v4")
 
+bart_model = BartForConditionalGeneration.from_pretrained("facebook/bart-large-cnn")
+bart_tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+
+def summarize_query(query, max_words=20):
+    
+    if len(query.split()) <= max_words:
+        return query  
+
+    inputs = bart_tokenizer([query], max_length=512, truncation=True, return_tensors="pt")
+    summary_ids = bart_model.generate(
+        inputs["input_ids"],
+        num_beams=4,
+        max_length=50,
+        min_length=10,
+        length_penalty=2.0,
+        early_stopping=True,
+    )
+    summary = bart_tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    return summary
+
 def combine_and_reword_answers(answers):
-    answers = [res['answer'] for res in answers]
+    answers = [res['answer'] if isinstance(res, dict) else res for res in answers]
 
     prompt = f"""
 You are a helpful and friendly customer support assistant.
@@ -50,7 +73,7 @@ Provide only the final customer-facing answer.
 
 
 
-    # Generate reworded answer
+    
     response = together.Complete.create(
         model="mistralai/Mistral-7B-Instruct-v0.2",
         prompt=prompt,
@@ -87,6 +110,7 @@ def retrieve_top_answers(query, top_k=3, score_threshold=0.5):
 
 
 def rag_pipeline(query):
-    top_answers = retrieve_top_answers(query, top_k=3)
+    concise_query = summarize_query(query)
+    top_answers = retrieve_top_answers(concise_query, top_k=3)
     merged_answer = combine_and_reword_answers(top_answers)
     return merged_answer
